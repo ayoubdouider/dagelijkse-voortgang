@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#0f1117" />
+  <title>Dagelijkse Voortgang</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #21263a;
+      --gold: #c9a84c;
+      --gold-light: #e8c97a;
+      --green: #2ecc71;
+      --text: #e8e8f0;
+      --muted: #6b7090;
+      --radius: 16px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100dvh;
+      padding-bottom: calc(64px + env(safe-area-inset-bottom));
+    }
+
+    /* ── Full-screen overlays ──────────────────────────────────── */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      flex-direction: column;
+      gap: 16px;
+      padding: 32px;
+    }
+
+    .overlay.hidden { display: none; }
+
+    /* Loading */
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid var(--surface2);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Login */
+    .login-card {
+      background: var(--surface);
+      border: 1px solid rgba(201,168,76,0.2);
+      border-radius: 24px;
+      padding: 36px 28px;
+      text-align: center;
+      max-width: 340px;
+      width: 100%;
+    }
+
+    .login-emoji { font-size: 52px; margin-bottom: 16px; }
+    .login-title { font-size: 22px; font-weight: 800; margin-bottom: 8px;
+      background: linear-gradient(135deg, var(--gold-light), var(--gold));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .login-sub { font-size: 14px; color: var(--muted); line-height: 1.5; margin-bottom: 28px; }
+
+    .google-btn {
+      width: 100%;
+      padding: 14px 20px;
+      background: white;
+      color: #1a1a1a;
+      border: none;
+      border-radius: 14px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+
+    .google-btn:active { transform: scale(0.97); opacity: 0.9; }
+
+    .google-logo {
+      width: 20px; height: 20px;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cpath fill='%23EA4335' d='M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z'/%3E%3Cpath fill='%234285F4' d='M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z'/%3E%3Cpath fill='%23FBBC05' d='M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z'/%3E%3Cpath fill='%2334A853' d='M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z'/%3E%3C/svg%3E") no-repeat center/contain;
+      flex-shrink: 0;
+    }
+
+    /* ── Bottom Nav ───────────────────────────────────────────── */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: calc(56px + env(safe-area-inset-bottom));
+      background: #13161f;
+      border-top: 1px solid rgba(255,255,255,0.07);
+      display: flex;
+      padding-bottom: env(safe-area-inset-bottom);
+      z-index: 100;
+    }
+
+    .nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      text-decoration: none;
+      color: var(--muted);
+      font-size: 10px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
+
+    .nav-item.active { color: var(--gold); }
+    .nav-item-icon { font-size: 22px; }
+
+    /* ── Header ──────────────────────────────────────────────── */
+    .header {
+      background: linear-gradient(135deg, #1a1d27 0%, #12162a 100%);
+      padding: 52px 20px 28px;
+      padding-top: max(52px, calc(env(safe-area-inset-top) + 20px));
+      border-bottom: 1px solid rgba(201,168,76,0.15);
+      text-align: center;
+      position: relative;
+    }
+
+    .signout-btn {
+      position: absolute;
+      top: max(16px, calc(env(safe-area-inset-top) + 4px));
+      right: 16px;
+      background: none;
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--muted);
+      font-size: 12px;
+      padding: 5px 10px;
+      border-radius: 20px;
+      cursor: pointer;
+    }
+
+    .header-date {
+      font-size: 13px;
+      color: var(--gold);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    .header-title {
+      font-size: 26px;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--gold-light), var(--gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 20px;
+    }
+
+    /* Progress ring */
+    .progress-ring-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+
+    .ring-container { position: relative; width: 110px; height: 110px; }
+    .ring-container svg { transform: rotate(-90deg); }
+    .ring-bg { fill: none; stroke: var(--surface2); stroke-width: 8; }
+    .ring-fill { fill: none; stroke: url(#goldGrad); stroke-width: 8; stroke-linecap: round;
+      transition: stroke-dashoffset 0.6s cubic-bezier(0.4,0,0.2,1); }
+
+    .ring-text { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .ring-percent { font-size: 28px; font-weight: 800; color: var(--gold-light); line-height: 1; }
+    .ring-label { font-size: 10px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+
+    .streak-badge {
+      display: flex; align-items: center; gap: 6px;
+      background: rgba(201,168,76,0.1);
+      border: 1px solid rgba(201,168,76,0.2);
+      padding: 6px 14px; border-radius: 20px;
+      font-size: 13px; color: var(--gold-light); font-weight: 500;
+    }
+
+    /* ── Content ─────────────────────────────────────────────── */
+    .content { padding: 20px 16px; max-width: 480px; margin: 0 auto; }
+
+    .section-label {
+      font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 12px; padding-left: 4px;
+    }
+
+    /* Habit cards */
+    .habits-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
+
+    .habit-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid rgba(255,255,255,0.05);
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 16px;
+      cursor: pointer;
+      transition: transform 0.15s, background 0.2s, border-color 0.2s;
+      user-select: none; -webkit-user-select: none;
+      position: relative; overflow: hidden;
+    }
+
+    .habit-card::before {
+      content: ''; position: absolute;
+      left: 0; top: 0; bottom: 0; width: 3px;
+      background: var(--gold); border-radius: 3px 0 0 3px;
+      transform: scaleY(0);
+      transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+      transform-origin: center;
+    }
+
+    .habit-card:active { transform: scale(0.98); }
+
+    .habit-card.done { background: rgba(46,204,113,0.07); border-color: rgba(46,204,113,0.2); }
+    .habit-card.done::before { background: var(--green); transform: scaleY(1); }
+
+    .habit-icon {
+      font-size: 24px; width: 44px; height: 44px;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--surface2); border-radius: 12px; flex-shrink: 0;
+      transition: background 0.2s;
+    }
+
+    .habit-card.done .habit-icon { background: rgba(46,204,113,0.12); }
+
+    .habit-info { flex: 1; min-width: 0; }
+
+    .habit-name { font-size: 15px; font-weight: 600; color: var(--text); transition: color 0.2s; }
+    .habit-card.done .habit-name {
+      color: rgba(232,232,240,0.6);
+      text-decoration: line-through;
+      text-decoration-color: rgba(46,204,113,0.5);
+    }
+
+    .habit-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    .habit-check {
+      width: 26px; height: 26px; border-radius: 50%;
+      border: 2px solid var(--muted);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.2s, border-color 0.2s;
+      font-size: 14px; color: transparent;
+    }
+
+    .habit-card.done .habit-check { background: var(--green); border-color: var(--green); color: white; }
+
+    /* Prayer sub-items */
+    .prayer-sub {
+      display: none; flex-direction: column; gap: 6px;
+      padding: 14px 16px 14px 74px;
+      background: var(--surface);
+      border-radius: 0 0 var(--radius) var(--radius);
+      border: 1px solid rgba(255,255,255,0.05); border-top: none;
+      margin-top: -10px;
+    }
+
+    .prayer-sub.open { display: flex; }
+
+    .prayer-item {
+      display: flex; align-items: center; justify-content: space-between;
+      cursor: pointer; padding: 6px 0;
+    }
+
+    .prayer-item-name { font-size: 13px; color: var(--muted); transition: color 0.2s; }
+    .prayer-item.checked .prayer-item-name { color: var(--green); text-decoration: line-through; text-decoration-color: rgba(46,204,113,0.4); }
+
+    .prayer-dot {
+      width: 18px; height: 18px; border-radius: 50%;
+      border: 1.5px solid var(--muted);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; color: transparent;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .prayer-item.checked .prayer-dot { background: var(--green); border-color: var(--green); color: white; }
+
+    .habit-card.prayer-card { border-radius: var(--radius) var(--radius) 0 0; }
+    .habit-card.prayer-card.closed { border-radius: var(--radius); }
+
+    .expand-arrow { font-size: 11px; color: var(--muted); margin-left: -6px; transition: transform 0.2s; }
+    .prayer-card.open-card .expand-arrow { transform: rotate(180deg); }
+
+    /* 7-day history */
+    .week-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-bottom: 28px; }
+
+    .day-cell { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+    .day-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .day-dot {
+      width: 36px; height: 36px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700;
+      background: var(--surface); color: var(--muted);
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .day-dot.today { border: 2px solid var(--gold); color: var(--gold); }
+    .day-dot.full { background: rgba(46,204,113,0.15); color: var(--green); border-color: rgba(46,204,113,0.3); }
+    .day-dot.partial { background: rgba(201,168,76,0.1); color: var(--gold); border-color: rgba(201,168,76,0.2); }
+
+    /* Reset */
+    .reset-btn {
+      width: 100%; padding: 14px;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: var(--radius);
+      color: var(--muted); font-size: 14px; cursor: pointer;
+      transition: border-color 0.2s, color 0.2s; margin-bottom: 32px;
+    }
+
+    .reset-btn:hover { border-color: rgba(255,100,100,0.3); color: #ff6b6b; }
+
+    /* Completion banner */
+    .banner {
+      display: none;
+      background: linear-gradient(135deg, rgba(46,204,113,0.15), rgba(46,204,113,0.05));
+      border: 1px solid rgba(46,204,113,0.25);
+      border-radius: var(--radius); padding: 16px; text-align: center; margin-bottom: 20px;
+    }
+
+    .banner.show { display: block; animation: fadeIn 0.5s ease; }
+    .banner-emoji { font-size: 32px; margin-bottom: 6px; }
+    .banner-title { font-size: 17px; font-weight: 700; color: var(--green); margin-bottom: 4px; }
+    .banner-sub { font-size: 13px; color: var(--muted); }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+
+    .confetti-dot {
+      position: fixed; width: 8px; height: 8px; border-radius: 2px;
+      pointer-events: none; z-index: 9999;
+      animation: confettiFall 1.2s ease-out forwards;
+    }
+
+    @keyframes confettiFall {
+      0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Loading -->
+<div class="overlay" id="loadingScreen">
+  <div class="spinner"></div>
+</div>
+
+<!-- Login -->
+<div class="overlay hidden" id="loginScreen">
+  <div class="login-card">
+    <div class="login-emoji">🌙</div>
+    <div class="login-title">Dagelijkse Voortgang</div>
+    <div class="login-sub">Log in om je voortgang te synchroniseren over al je apparaten.</div>
+    <button class="google-btn" id="googleBtn">
+      <div class="google-logo"></div>
+      Inloggen met Google
+    </button>
+  </div>
+</div>
+
+<!-- App -->
+<div class="header">
+  <button class="signout-btn" id="signoutBtn" style="display:none">Uitloggen</button>
+  <div class="header-date" id="headerDate"></div>
+  <div class="header-title">Dagelijkse Voortgang</div>
+  <div class="progress-ring-wrap">
+    <div class="ring-container">
+      <svg width="110" height="110" viewBox="0 0 110 110">
+        <defs>
+          <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#e8c97a"/>
+            <stop offset="100%" style="stop-color:#c9a84c"/>
+          </linearGradient>
+        </defs>
+        <circle class="ring-bg" cx="55" cy="55" r="46"/>
+        <circle class="ring-fill" id="ringFill" cx="55" cy="55" r="46"
+          stroke-dasharray="289" stroke-dashoffset="289"/>
+      </svg>
+      <div class="ring-text">
+        <span class="ring-percent" id="ringPercent">0%</span>
+        <span class="ring-label">Vandaag</span>
+      </div>
+    </div>
+    <div class="streak-badge" id="streakBadge">🔥 0 dagen streak</div>
+  </div>
+</div>
+
+<div class="content">
+  <div class="banner" id="completionBanner">
+    <div class="banner-emoji">🌟</div>
+    <div class="banner-title">Alles voltooid!</div>
+    <div class="banner-sub">Masha'Allah — geweldig gedaan vandaag.</div>
+  </div>
+
+  <p class="section-label">Vandaag</p>
+  <div class="habits-list" id="habitsList"></div>
+
+  <p class="section-label">Laatste 7 dagen</p>
+  <div class="week-grid" id="weekGrid"></div>
+
+  <button class="reset-btn" id="resetBtn">Dag resetten</button>
+</div>
+
+<nav class="bottom-nav">
+  <a class="nav-item active" href="index.html">
+    <span class="nav-item-icon">☀️</span>
+    <span>Vandaag</span>
+  </a>
+  <a class="nav-item" href="workout.html">
+    <span class="nav-item-icon">🏋️</span>
+    <span>Workout</span>
+  </a>
+</nav>
+
+<script type="module">
+import { initializeApp }                                          from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut,
+         onAuthStateChanged }                                     from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+import { initializeFirestore, persistentLocalCache,
+         doc, getDoc, setDoc, collection, getDocs }              from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+import { FIREBASE_CONFIG }                                        from './firebase-config.js';
+
+// ── Firebase init ─────────────────────────────────────────────────────────────
+const app  = initializeApp(FIREBASE_CONFIG);
+const auth = getAuth(app);
+const db   = initializeFirestore(app, { localCache: persistentLocalCache() });
+
+const HABITS = [
+  { id: 'train',   icon: '🏋️', name: '1× Trainen',         sub: 'Dagelijkse training' },
+  { id: 'prayer',  icon: '🕌', name: 'Gebeden op tijd',      sub: 'Tap om per gebed te markeren', prayers: true },
+  { id: 'quran',   icon: '📖', name: "2 pagina's Koran",     sub: 'Dagelijkse recitatie' },
+  { id: 'stretch', icon: '🧘', name: '1× Stretchen',         sub: 'Mobiliteit & herstel' },
+  { id: 'focus',   icon: '💻', name: '90 min Deep Focus',    sub: 'Onafgebroken werksessie' },
+  { id: 'mosque',  icon: '🕋', name: '1× Moskee',            sub: 'Gemeenschapsgebed' },
+];
+
+const PRAYERS   = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+const DAYS_NL   = ['Zo','Ma','Di','Wo','Do','Vr','Za'];
+const MONTHS_NL = ['januari','februari','maart','april','mei','juni','juli','augustus','september','oktober','november','december'];
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let uid          = null;
+let state        = {};          // today's habit state
+let cachedDays   = {};          // dateKey → habit state (last 60 days)
+let prayerOpen   = false;
+
+function dateKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function todayKey() { return dateKey(new Date()); }
+
+// ── Firestore helpers ─────────────────────────────────────────────────────────
+function dailyRef(key) {
+  return doc(db, 'users', uid, 'daily', key);
+}
+
+async function loadRecentDays() {
+  const today = new Date();
+  const keys  = Array.from({ length: 60 }, (_, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    return dateKey(d);
+  });
+
+  const snaps = await Promise.all(keys.map(k => getDoc(dailyRef(k))));
+  snaps.forEach((snap, i) => {
+    cachedDays[keys[i]] = snap.exists() ? snap.data() : {};
+  });
+  state = cachedDays[todayKey()] || {};
+}
+
+async function persistState() {
+  cachedDays[todayKey()] = { ...state };
+  await setDoc(dailyRef(todayKey()), state);
+}
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+onAuthStateChanged(auth, async user => {
+  if (user) {
+    uid = user.uid;
+    document.getElementById('signoutBtn').style.display = 'block';
+    await loadRecentDays();
+    hide('loadingScreen');
+    renderAll();
+  } else {
+    hide('loadingScreen');
+    show('loginScreen');
+  }
+});
+
+document.getElementById('googleBtn').addEventListener('click', async () => {
+  try {
+    await signInWithPopup(auth, new GoogleAuthProvider());
+  } catch (e) {
+    alert('Inloggen mislukt: ' + e.message);
+  }
+});
+
+document.getElementById('signoutBtn').addEventListener('click', async () => {
+  if (confirm('Uitloggen?')) await signOut(auth);
+  show('loginScreen');
+  state = {}; cachedDays = {}; uid = null;
+  document.getElementById('signoutBtn').style.display = 'none';
+});
+
+document.getElementById('resetBtn').addEventListener('click', async () => {
+  if (confirm('Weet je zeker dat je vandaag wilt resetten?')) {
+    state = {};
+    await persistState();
+    renderAll();
+  }
+});
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function renderAll() {
+  renderHeader();
+  renderProgress();
+  renderStreak();
+  renderHabits();
+  renderWeek();
+}
+
+function renderHeader() {
+  const d = new Date();
+  document.getElementById('headerDate').textContent =
+    `${DAYS_NL[d.getDay()]} ${d.getDate()} ${MONTHS_NL[d.getMonth()]}`;
+}
+
+function renderProgress() {
+  const done = HABITS.filter(h => isHabitDone(h.id)).length;
+  const pct  = Math.round(done / HABITS.length * 100);
+  const offset = 289 - 289 * pct / 100;
+  document.getElementById('ringFill').style.strokeDashoffset = offset;
+  document.getElementById('ringPercent').textContent = pct + '%';
+
+  const banner = document.getElementById('completionBanner');
+  if (pct === 100) {
+    if (!banner.classList.contains('show')) {
+      banner.classList.add('show');
+      launchConfetti();
+    }
+  } else {
+    banner.classList.remove('show');
+  }
+}
+
+function renderStreak() {
+  let streak = 0;
+  const today = new Date();
+  for (let i = 1; i <= 60; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    const key      = dateKey(d);
+    const dayState = cachedDays[key] || {};
+    const allDone  = HABITS.every(h => {
+      if (h.id === 'prayer') return PRAYERS.every(p => dayState['prayer_' + p]);
+      return !!dayState[h.id];
+    });
+    if (allDone) streak++;
+    else break;
+  }
+  document.getElementById('streakBadge').textContent =
+    `🔥 ${streak} ${streak === 1 ? 'dag' : 'dagen'} streak`;
+}
+
+function isHabitDone(id) {
+  if (id !== 'prayer') return !!state[id];
+  return PRAYERS.every(p => state['prayer_' + p]);
+}
+
+function renderHabits() {
+  const list = document.getElementById('habitsList');
+  list.innerHTML = '';
+
+  HABITS.forEach(h => {
+    const done = isHabitDone(h.id);
+
+    if (h.prayers) {
+      const card = document.createElement('div');
+      card.className = `habit-card prayer-card${done ? ' done' : ''}${prayerOpen ? ' open-card' : ' closed'}`;
+      card.innerHTML = `
+        <div class="habit-icon">${h.icon}</div>
+        <div class="habit-info">
+          <div class="habit-name">${h.name}</div>
+          <div class="habit-sub">${PRAYERS.filter(p => state['prayer_'+p]).length} / 5 gebeden</div>
+        </div>
+        <span class="expand-arrow">▼</span>
+        <div class="habit-check">${done ? '✓' : ''}</div>
+      `;
+      card.addEventListener('click', () => { prayerOpen = !prayerOpen; renderHabits(); });
+      list.appendChild(card);
+
+      const sub = document.createElement('div');
+      sub.className = `prayer-sub${prayerOpen ? ' open' : ''}`;
+      PRAYERS.forEach(p => {
+        const checked = !!state['prayer_' + p];
+        const item = document.createElement('div');
+        item.className = `prayer-item${checked ? ' checked' : ''}`;
+        item.innerHTML = `<span class="prayer-item-name">${p}</span><span class="prayer-dot">${checked ? '✓' : ''}</span>`;
+        item.addEventListener('click', async e => {
+          e.stopPropagation();
+          state['prayer_' + p] = !checked;
+          await persistState();
+          renderAll();
+        });
+        sub.appendChild(item);
+      });
+      list.appendChild(sub);
+
+    } else {
+      const card = document.createElement('div');
+      card.className = `habit-card${done ? ' done' : ''}`;
+      card.innerHTML = `
+        <div class="habit-icon">${h.icon}</div>
+        <div class="habit-info">
+          <div class="habit-name">${h.name}</div>
+          <div class="habit-sub">${h.sub}</div>
+        </div>
+        <div class="habit-check">${done ? '✓' : ''}</div>
+      `;
+      card.addEventListener('click', async () => {
+        state[h.id] = !done;
+        await persistState();
+        renderAll();
+      });
+      list.appendChild(card);
+    }
+  });
+}
+
+function renderWeek() {
+  const grid  = document.getElementById('weekGrid');
+  const today = todayKey();
+  grid.innerHTML = '';
+
+  for (let i = 6; i >= 0; i--) {
+    const d   = new Date();
+    d.setDate(d.getDate() - i);
+    const key = dateKey(d);
+    const s   = i === 0 ? state : (cachedDays[key] || {});
+
+    const done = HABITS.filter(h => {
+      if (h.id === 'prayer') return PRAYERS.every(p => s['prayer_' + p]);
+      return !!s[h.id];
+    }).length;
+
+    const cell = document.createElement('div');
+    cell.className = 'day-cell';
+
+    const label = document.createElement('div');
+    label.className = 'day-label';
+    label.textContent = DAYS_NL[d.getDay()];
+
+    const dot = document.createElement('div');
+    dot.className = 'day-dot';
+    if (key === today)                        dot.classList.add('today');
+    else if (done === HABITS.length && done)  dot.classList.add('full');
+    else if (done > 0)                        dot.classList.add('partial');
+    dot.textContent = done > 0 ? done : (key === today ? '·' : '');
+
+    cell.appendChild(label);
+    cell.appendChild(dot);
+    grid.appendChild(cell);
+  }
+}
+
+// ── Utils ─────────────────────────────────────────────────────────────────────
+function show(id) { document.getElementById(id).classList.remove('hidden'); }
+function hide(id) { document.getElementById(id).classList.add('hidden'); }
+
+function launchConfetti() {
+  const colors = ['#c9a84c','#e8c97a','#2ecc71','#3498db','#9b59b6'];
+  for (let i = 0; i < 60; i++) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.className = 'confetti-dot';
+      el.style.cssText = `left:${Math.random()*100}vw;top:-10px;background:${colors[i%colors.length]};animation-duration:${0.8+Math.random()}s`;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 2000);
+    }, i * 15);
+  }
+}
+
+// Auto-refresh at midnight
+(function scheduleMidnight() {
+  const ms = new Date().setHours(24,0,0,0) - Date.now();
+  setTimeout(async () => {
+    await loadRecentDays();
+    renderAll();
+    scheduleMidnight();
+  }, ms);
+})();
+</script>
+</body>
+</html>
