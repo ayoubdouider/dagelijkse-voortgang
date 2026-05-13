@@ -536,25 +536,25 @@ function renderExercise() {
       <span class="set-label">Set ${si+1}</span>
       <div class="set-fields">
         <div class="set-input-group">
-          <button class="stepper-btn" onclick="adj('reps',${si},-1)">−</button>
+          <button class="stepper-btn" data-action="adj" data-field="reps" data-si="${si}" data-delta="-1">−</button>
           <input class="stepper-val" type="number" id="reps-${si}"
+            data-field="reps" data-si="${si}"
             value="${s.reps ?? ''}" placeholder="—"
-            oninput="inp('reps',${si},this.value)"
-            style="width:${Math.max(32, String(s.reps ?? '').length * 12)}px">
-          <button class="stepper-btn" onclick="adj('reps',${si},1)">+</button>
+            style="width:${Math.max(36, String(s.reps ?? '').length * 12)}px">
+          <button class="stepper-btn" data-action="adj" data-field="reps" data-si="${si}" data-delta="1">+</button>
         </div>
         <span class="set-sep">×</span>
         <div class="set-input-group">
-          <button class="stepper-btn" onclick="adj('weight',${si},-2.5)">−</button>
+          <button class="stepper-btn" data-action="adj" data-field="weight" data-si="${si}" data-delta="-2.5">−</button>
           <input class="stepper-val" type="number" id="weight-${si}"
+            data-field="weight" data-si="${si}"
             value="${s.weight ?? ''}" placeholder="—" step="2.5"
-            oninput="inp('weight',${si},this.value)"
-            style="width:${Math.max(32, String(s.weight ?? '').length * 12)}px">
-          <button class="stepper-btn" onclick="adj('weight',${si},2.5)">+</button>
+            style="width:${Math.max(36, String(s.weight ?? '').length * 12)}px">
+          <button class="stepper-btn" data-action="adj" data-field="weight" data-si="${si}" data-delta="2.5">+</button>
         </div>
         <span class="set-unit">${ex.bw ? '+kg' : 'kg'}</span>
       </div>
-      <button class="set-done-btn" onclick="toggleSet(${si})">✓</button>
+      <button class="set-done-btn" data-action="toggle" data-si="${si}">✓</button>
     </div>
   `).join('');
 
@@ -566,47 +566,54 @@ function renderExercise() {
     <div class="exercise-dots">${dots}</div>
     <div class="sets-list">${setsHtml}</div>
     <div class="nav-btns">
-      <button class="nav-btn nav-btn-prev" onclick="prevEx()" ${isFirst ? 'disabled' : ''}>← Vorige</button>
-      <button class="nav-btn nav-btn-next ${isLast ? 'nav-btn-finish' : ''}" onclick="${isLast ? 'finishWorkout()' : 'nextEx()'}">
+      <button class="nav-btn nav-btn-prev" data-action="prev" ${isFirst ? 'disabled' : ''}>← Vorige</button>
+      <button class="nav-btn nav-btn-next ${isLast ? 'nav-btn-finish' : ''}" data-action="${isLast ? 'finish' : 'next'}">
         ${isLast ? 'Afronden ✓' : 'Volgende →'}
       </button>
     </div>
   `;
 }
 
-// Exposed to inline onclick (module scope limitation)
-window.adj = (field, si, delta) => {
+// ── Event delegation (één listener voor alle knoppen in de oefening) ──────────
+document.getElementById('exerciseWrap').addEventListener('click', e => {
+  const btn = e.target.closest('[data-action]');
+  if (!btn || btn.tagName === 'INPUT') return;
+  const { action, field, delta, si } = btn.dataset;
+  const idx = si !== undefined ? parseInt(si) : null;
+
+  if (action === 'adj')    adjVal(field, idx, parseFloat(delta));
+  if (action === 'toggle') toggleSetDone(idx);
+  if (action === 'prev')   { if (currentIdx > 0) { currentIdx--; renderExercise(); } }
+  if (action === 'next')   { if (currentIdx < WORKOUTS[currentWid].exercises.length - 1) { currentIdx++; renderExercise(); } }
+  if (action === 'finish') finishWorkout();
+});
+
+document.getElementById('exerciseWrap').addEventListener('input', e => {
+  const input = e.target.closest('input[data-field]');
+  if (!input || !currentWid) return;
+  const ex  = WORKOUTS[currentWid].exercises[currentIdx];
+  const val = input.value === '' ? null : parseFloat(input.value);
+  sessionSets[ex.id][parseInt(input.dataset.si)][input.dataset.field] = isNaN(val) ? null : val;
+});
+
+function adjVal(field, si, delta) {
   const ex  = WORKOUTS[currentWid].exercises[currentIdx];
   const set = sessionSets[ex.id][si];
   const val = Math.max(0, parseFloat(((set[field] ?? 0) + delta).toFixed(1)));
   set[field] = val;
-  const inp = document.getElementById(`${field}-${si}`);
-  if (inp) { inp.value = val; inp.style.width = Math.max(32, String(val).length * 12) + 'px'; }
-};
+  const el = document.getElementById(`${field}-${si}`);
+  if (el) { el.value = val; el.style.width = Math.max(36, String(val).length * 12) + 'px'; }
+}
 
-window.inp = (field, si, val) => {
-  const ex = WORKOUTS[currentWid].exercises[currentIdx];
-  const p  = val === '' ? null : parseFloat(val);
-  sessionSets[ex.id][si][field] = isNaN(p) ? null : p;
-};
-
-window.toggleSet = si => {
+function toggleSetDone(si) {
   const ex  = WORKOUTS[currentWid].exercises[currentIdx];
   const set = sessionSets[ex.id][si];
   set.done  = !set.done;
   const row = document.getElementById('set-row-' + si);
-  row.classList.toggle('set-completed', set.done);
-};
+  if (row) row.classList.toggle('set-completed', set.done);
+}
 
-window.nextEx = () => {
-  if (currentIdx < WORKOUTS[currentWid].exercises.length - 1) { currentIdx++; renderExercise(); }
-};
-
-window.prevEx = () => {
-  if (currentIdx > 0) { currentIdx--; renderExercise(); }
-};
-
-window.finishWorkout = async () => {
+async function finishWorkout() {
   // Save sets (strip done flag)
   const toSave = {};
   WORKOUTS[currentWid].exercises.forEach(ex => {
