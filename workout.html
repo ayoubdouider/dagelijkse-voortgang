@@ -272,6 +272,13 @@
     <div class="workout-grid" id="workoutGrid"></div>
     <p class="section-label">Geschiedenis</p>
     <div class="history-list" id="historyList"></div>
+
+    <!-- Dashboard toggle -->
+    <div class="dashboard-toggle" id="dashToggle" style="margin:20px -16px 0;padding:14px 16px;background:var(--surface);border-top:1px solid rgba(255,255,255,0.05);border-bottom:1px solid rgba(255,255,255,0.05);cursor:pointer;display:flex;align-items:center;justify-content:space-between;">
+      <span style="font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px">📊 Voortgang</span>
+      <span id="dashArrow" style="font-size:11px;color:var(--muted);transition:transform 0.2s">▼</span>
+    </div>
+    <div id="dashBody" style="display:none;padding-top:20px"></div>
   </div>
 </div>
 
@@ -307,14 +314,9 @@
 
 <!-- ── Bottom Nav ─────────────────────────────────────────────────── -->
 <nav class="bottom-nav">
-  <a class="nav-item" href="index.html">
-    <span class="nav-item-icon">☀️</span>
-    <span>Vandaag</span>
-  </a>
-  <a class="nav-item active" href="workout.html">
-    <span class="nav-item-icon">🏋️</span>
-    <span>Workout</span>
-  </a>
+  <a class="nav-item" href="index.html"><span class="nav-item-icon">☀️</span><span>Vandaag</span></a>
+  <a class="nav-item active" href="workout.html"><span class="nav-item-icon">🏋️</span><span>Workout</span></a>
+  <a class="nav-item" href="todos.html"><span class="nav-item-icon">✅</span><span>Taken</span></a>
 </nav>
 
 <script type="module">
@@ -481,6 +483,93 @@ async function renderSelection() {
       list.appendChild(el);
     });
   }
+}
+
+// ── Workout dashboard ─────────────────────────────────────────────────────────
+let dashOpen = false;
+
+document.getElementById('dashToggle').addEventListener('click', async () => {
+  dashOpen = !dashOpen;
+  document.getElementById('dashArrow').style.transform = dashOpen ? 'rotate(180deg)' : '';
+  const body = document.getElementById('dashBody');
+  body.style.display = dashOpen ? 'block' : 'none';
+  if (dashOpen) await renderDashboard();
+});
+
+async function renderDashboard() {
+  const hist    = await loadHistory();
+  const body    = document.getElementById('dashBody');
+  const SECTION = (t) => `<p style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;margin-top:4px">${t}</p>`;
+
+  // ── Frequency: workouts per week (last 8 weeks) ───────────────────────────
+  const now = Date.now();
+  const weeks = Array.from({length: 8}, (_, i) => {
+    const start = now - (8-i)*7*86400000;
+    const end   = now - (7-i)*7*86400000;
+    return hist.filter(h => { const t = new Date(h.date).getTime(); return t >= start && t < end; }).length;
+  });
+  const maxW = Math.max(...weeks, 1);
+
+  const freqBars = weeks.map((n, i) => {
+    const h = Math.round((n / maxW) * 56);
+    const label = i === 7 ? 'Nu' : `-${8-i}w`;
+    return `
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1">
+        <span style="font-size:11px;font-weight:700;color:${n>0?'var(--gold-light)':'var(--muted)'}">${n||''}</span>
+        <div style="width:100%;background:var(--surface2);border-radius:4px;height:56px;display:flex;align-items:flex-end;overflow:hidden">
+          <div style="width:100%;height:${h}px;background:${i===7?'var(--green)':'var(--gold)'};border-radius:4px;transition:height 0.5s"></div>
+        </div>
+        <span style="font-size:9px;color:var(--muted)">${label}</span>
+      </div>`;
+  }).join('');
+
+  // ── Per workout type: last done + total count ─────────────────────────────
+  const typeRows = Object.entries(WORKOUTS).map(([wid, w]) => {
+    const sessions = hist.filter(h => h.wid === wid);
+    const last     = sessions[0];
+    const lastText = last ? relDate(last.date) : '—';
+    const count    = sessions.length;
+    return `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface);border-radius:12px;border:1px solid rgba(255,255,255,0.05)">
+        <div>
+          <div style="font-size:14px;font-weight:600;color:var(--text)">${w.icon} ${w.name}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">Laatste: ${lastText}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:20px;font-weight:800;color:var(--gold-light)">${count}</div>
+          <div style="font-size:10px;color:var(--muted)">sessies</div>
+        </div>
+      </div>`;
+  }).join('');
+
+  // ── Total stats ───────────────────────────────────────────────────────────
+  const totalSessions  = hist.length;
+  const thisMonthStart = new Date(); thisMonthStart.setDate(1); thisMonthStart.setHours(0,0,0,0);
+  const thisMonth      = hist.filter(h => new Date(h.date) >= thisMonthStart).length;
+  const avgDuration    = hist.length ? Math.round(hist.reduce((s,h) => s+(h.duration||0), 0) / hist.length) : 0;
+
+  body.innerHTML = `
+    ${SECTION('Frequentie (8 weken)')}
+    <div style="display:flex;gap:6px;align-items:flex-end;margin-bottom:24px">${freqBars}</div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:24px">
+      <div style="background:var(--surface);border-radius:14px;padding:14px;border:1px solid rgba(255,255,255,0.05);text-align:center">
+        <div style="font-size:22px;font-weight:800;color:var(--gold-light)">${totalSessions}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:3px">Totaal</div>
+      </div>
+      <div style="background:var(--surface);border-radius:14px;padding:14px;border:1px solid rgba(255,255,255,0.05);text-align:center">
+        <div style="font-size:22px;font-weight:800;color:var(--gold-light)">${thisMonth}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:3px">Deze maand</div>
+      </div>
+      <div style="background:var(--surface);border-radius:14px;padding:14px;border:1px solid rgba(255,255,255,0.05);text-align:center">
+        <div style="font-size:22px;font-weight:800;color:var(--gold-light)">${avgDuration}<span style="font-size:12px">m</span></div>
+        <div style="font-size:10px;color:var(--muted);margin-top:3px">Gem. duur</div>
+      </div>
+    </div>
+
+    ${SECTION('Per training')}
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">${typeRows}</div>
+  `;
 }
 
 // ── Workout flow ──────────────────────────────────────────────────────────────
