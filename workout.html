@@ -334,50 +334,58 @@ const db   = initializeFirestore(app, { localCache: persistentLocalCache() });
 
 // ── Workout data ──────────────────────────────────────────────────────────────
 const WORKOUTS = {
-  'upper-a': {
-    name: 'Upper A', icon: '💪', accent: '#c9a84c',
+  'lower-a': {
+    name: 'Lower A · Strength', icon: '🦵', accent: '#3b82f6',
     exercises: [
-      { id: 'bench-press',      name: 'Barbell bench press',        sets: [{reps:12,weight:60},{reps:6,weight:80},{reps:3,weight:90},{reps:4,weight:90}] },
-      { id: 'weighted-pullups', name: 'Weighted pull ups', bw: true, sets: [{reps:7,weight:0},{reps:5,weight:0},{reps:4,weight:0},{reps:4,weight:0}] },
-      { id: 'ohp',              name: 'Overhead press',             sets: [{reps:10,weight:40},{reps:3,weight:50},{reps:3,weight:50},{reps:2,weight:45}] },
-      { id: 'tbar-row',         name: 'T-Bar row',                  sets: [{reps:null,weight:30},{reps:null,weight:40},{reps:null,weight:40},{reps:null,weight:50}] },
-      { id: 'pec-fly',          name: 'Pec fly',                    sets: [{reps:12,weight:12},{reps:8,weight:14},{reps:8,weight:14},{reps:6,weight:16}] },
-      { id: 'face-pulls',       name: 'Face pulls',                 sets: [{reps:12,weight:11},{reps:10,weight:16},{reps:10,weight:16}] },
+      { id: 'back-squat',        name: 'Back squat',                    sets: [{reps:8,weight:30},{reps:8,weight:35},{reps:8,weight:35},{reps:8,weight:35}] },
+      { id: 'romanian-deadlift', name: 'Romanian deadlift',             sets: [{reps:8,weight:35},{reps:8,weight:45},{reps:8,weight:45},{reps:8,weight:45}] },
+      { id: 'step-up',           name: 'Step-up (per been)',            sets: [{reps:8,weight:10},{reps:8,weight:10},{reps:8,weight:10}] },
+      { id: 'seated-leg-curl',   name: 'Seated leg curl',               sets: [{reps:12,weight:27},{reps:10,weight:32},{reps:10,weight:32}] },
+      { id: 'calf-raise',        name: 'Standing calf raise',           sets: [{reps:12,weight:20},{reps:10,weight:25},{reps:10,weight:25}] },
+      { id: 'spanish-squat',     name: 'Spanish squat (45s +band)', bw: true, sets: [{reps:45,weight:null},{reps:45,weight:null},{reps:45,weight:null}] },
+      { id: 'cable-crunch',      name: 'Cable crunch',                  sets: [{reps:12,weight:32},{reps:10,weight:41},{reps:10,weight:41}] },
     ]
   },
-  'lower-a': {
-    name: 'Lower A', icon: '🦵', accent: '#3b82f6',
+  'upper-a': {
+    name: 'Upper A · Hypertrophy', icon: '💪', accent: '#c9a84c',
     exercises: [
-      { id: 'back-squat',          name: 'Back squat',           sets: e(4) },
-      { id: 'romanian-deadlift',   name: 'Romanian deadlift',    sets: e(4) },
-      { id: 'bulgarian-split-squat', name: 'Bulgarian split squat', sets: e(4) },
-      { id: 'leg-curl',            name: 'Leg curl',             sets: e(4) },
-      { id: 'calf-raise',          name: 'Standing calf raise',  sets: e(4) },
-      { id: 'cable-crunch',        name: 'Cable crunch',         sets: e(4) },
-      { id: 'dragon-flag',         name: 'Dragon Flag', bw: true, sets: e(4) },
+      { id: 'bench-press',       name: 'Barbell bench press',           sets: [{reps:10,weight:65},{reps:8,weight:75},{reps:6,weight:80},{reps:6,weight:80}] },
+      { id: 'weighted-pullups',  name: 'Weighted pull ups', bw: true,   sets: [{reps:8,weight:0},{reps:6,weight:5},{reps:5,weight:7.5},{reps:5,weight:7.5}] },
+      { id: 'db-shoulder-press', name: 'Dumbbell shoulder press',       sets: [{reps:10,weight:18},{reps:10,weight:20},{reps:8,weight:20}] },
+      { id: 'chest-row',         name: 'Chest-supported row',           sets: [{reps:10,weight:35},{reps:8,weight:42.5},{reps:8,weight:42.5}] },
+      { id: 'pec-fly',           name: 'Pec fly',                       sets: [{reps:12,weight:16},{reps:10,weight:18},{reps:10,weight:18}] },
+      { id: 'face-pulls',        name: 'Face pulls',                    sets: [{reps:15,weight:18},{reps:15,weight:18},{reps:15,weight:18}] },
+      { id: 'farmer-carry',      name: 'Farmer carry (25m)',            sets: [{reps:25,weight:30},{reps:25,weight:30},{reps:25,weight:30}] },
     ]
   },
   'upper-b': {
-    name: 'Upper B', icon: '💪', accent: '#8b5cf6',
+    name: 'Upper B · Strength + Power', icon: '💪', accent: '#8b5cf6',
     exercises: [
-      { id: 'incline-bench',   name: 'Incline barbell bench press', sets: [{reps:10,weight:60},{reps:10,weight:60},{reps:3,weight:70},{reps:5,weight:70}] },
-      { id: 'pulldown',        name: 'Pulldown',                    sets: [{reps:12,weight:52},{reps:8,weight:66},{reps:4,weight:73},{reps:4,weight:73}] },
-      { id: 'pec-dec',         name: 'Pec dec',                     sets: [{reps:10,weight:73},{reps:10,weight:73},{reps:7,weight:93},{reps:9,weight:93}] },
-      { id: 'chest-row',       name: 'Chest-supported row',         sets: [{reps:10,weight:30},{reps:3,weight:50},{reps:4,weight:50},{reps:5,weight:50}] },
-      { id: 'lateral-raise',   name: 'Dumbbell lateral raise',      sets: [{reps:20,weight:8},{reps:10,weight:12},{reps:8,weight:12},{reps:6,weight:12}] },
-      { id: 'reverse-pec-deck', name: 'Reverse pec deck',           sets: [{reps:10,weight:3},{reps:10,weight:3},{reps:7,weight:5},{reps:7,weight:5}] },
+      { id: 'mb-chest-pass',    name: 'Med ball chest pass',            sets: [{reps:5,weight:5},{reps:5,weight:5},{reps:5,weight:5},{reps:5,weight:5}] },
+      { id: 'mb-rot-throw',     name: 'Med ball rotational throw (per zijde)', sets: [{reps:5,weight:5},{reps:5,weight:5},{reps:5,weight:5}] },
+      { id: 'incline-bench',    name: 'Incline barbell bench press',    sets: [{reps:10,weight:60},{reps:8,weight:67.5},{reps:6,weight:72.5},{reps:6,weight:72.5}] },
+      { id: 'pulldown',         name: 'Lat pulldown',                   sets: [{reps:10,weight:59},{reps:8,weight:66},{reps:6,weight:73},{reps:6,weight:73}] },
+      { id: 'ohp',              name: 'Overhead press',                 sets: [{reps:8,weight:42.5},{reps:6,weight:47.5},{reps:6,weight:47.5}] },
+      { id: 'chest-row',        name: 'Chest-supported row',            sets: [{reps:10,weight:35},{reps:8,weight:42.5},{reps:8,weight:45}] },
+      { id: 'reverse-pec-deck', name: 'Reverse pec deck',               sets: [{reps:12,weight:4.5},{reps:12,weight:4.5},{reps:12,weight:4.5}] },
+      { id: 'pallof-press',     name: 'Pallof press (per zijde)',       sets: [{reps:12,weight:23},{reps:12,weight:27},{reps:12,weight:27}] },
     ]
   },
   'lower-b': {
-    name: 'Lower B', icon: '🦵', accent: '#ef4444',
+    name: 'Lower B · Athletic', icon: '🦵', accent: '#ef4444',
     exercises: [
-      { id: 'deadlift',            name: 'Deadlift',              sets: e(4) },
-      { id: 'hack-squat',          name: 'Hack squat',            sets: e(4) },
-      { id: 'walking-lunges',      name: 'Walking lunges',        sets: e(4) },
-      { id: 'hip-thrust',          name: 'Hip thrust',            sets: e(4) },
-      { id: 'seated-leg-curl',     name: 'Seated leg curl',       sets: e(4) },
-      { id: 'landmine-twist',      name: 'Landmine twist',        sets: e(4) },
-      { id: 'cable-core-rotation', name: 'Cable core rotation',   sets: e(4) },
+      { id: 'pogos',            name: 'Pogos', bw: true,                sets: [{reps:20,weight:null},{reps:20,weight:null},{reps:20,weight:null}] },
+      { id: 'box-landing',      name: 'Box landing (20cm)', bw: true,   sets: [{reps:5,weight:null},{reps:5,weight:null},{reps:5,weight:null}] },
+      { id: 'cmj',              name: 'Countermovement jump', bw: true, sets: [{reps:5,weight:null},{reps:5,weight:null},{reps:5,weight:null}] },
+      { id: 'lateral-hop',      name: 'Lateral hop & stick (per been)', bw: true, sets: [{reps:5,weight:null},{reps:5,weight:null},{reps:5,weight:null}] },
+      { id: 'y-balance',        name: 'Single-leg balance reach', bw: true, sets: [{reps:5,weight:null},{reps:5,weight:null}] },
+      { id: 'deadlift',         name: 'Deadlift',                       sets: [{reps:5,weight:50},{reps:5,weight:60},{reps:5,weight:60},{reps:5,weight:60}] },
+      { id: 'hack-squat',       name: 'Hack squat (RPE 7)',             sets: [{reps:10,weight:null},{reps:8,weight:null},{reps:8,weight:null}] },
+      { id: 'hip-thrust',       name: 'Hip thrust',                     sets: [{reps:10,weight:25},{reps:8,weight:35},{reps:8,weight:35}] },
+      { id: 'sl-rdl',           name: 'Single-leg Romanian deadlift',   sets: [{reps:10,weight:12},{reps:10,weight:12},{reps:10,weight:12}] },
+      { id: 'seated-leg-curl',  name: 'Seated leg curl',                sets: [{reps:12,weight:27},{reps:10,weight:32},{reps:10,weight:32}] },
+      { id: 'copenhagen-plank', name: 'Copenhagen plank (20s per zijde)', bw: true, sets: [{reps:20,weight:null},{reps:20,weight:null},{reps:20,weight:null}] },
+      { id: 'cable-rotation',   name: 'Cable rotation',                 sets: [{reps:12,weight:27},{reps:10,weight:36},{reps:10,weight:36}] },
     ]
   }
 };
