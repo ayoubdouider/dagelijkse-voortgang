@@ -334,6 +334,18 @@ const db   = initializeFirestore(app, { localCache: persistentLocalCache() });
 
 // ── Workout data ──────────────────────────────────────────────────────────────
 const WORKOUTS = {
+  'upper-a': {
+    name: 'Upper A · Hypertrophy', icon: '💪', accent: '#c9a84c',
+    exercises: [
+      { id: 'bench-press',       name: 'Barbell bench press',           sets: [{reps:10,weight:65},{reps:8,weight:75},{reps:6,weight:80},{reps:6,weight:80}] },
+      { id: 'weighted-pullups',  name: 'Weighted pull ups', bw: true,   sets: [{reps:8,weight:0},{reps:6,weight:5},{reps:5,weight:7.5},{reps:5,weight:7.5}] },
+      { id: 'db-shoulder-press', name: 'Dumbbell shoulder press',       sets: [{reps:10,weight:18},{reps:10,weight:20},{reps:8,weight:20}] },
+      { id: 'tbar-row',          name: 'T-Bar row',                     sets: [{reps:10,weight:35},{reps:8,weight:42.5},{reps:8,weight:42.5}] },
+      { id: 'pec-fly',           name: 'Pec fly',                       sets: [{reps:12,weight:16},{reps:10,weight:18},{reps:10,weight:18}] },
+      { id: 'face-pulls',        name: 'Face pulls',                    sets: [{reps:15,weight:18},{reps:15,weight:18},{reps:15,weight:18}] },
+      { id: 'farmer-carry',      name: 'Farmer carry (25m)',            sets: [{reps:25,weight:30},{reps:25,weight:30},{reps:25,weight:30}] },
+    ]
+  },
   'lower-a': {
     name: 'Lower A · Strength', icon: '🦵', accent: '#3b82f6',
     exercises: [
@@ -344,18 +356,6 @@ const WORKOUTS = {
       { id: 'calf-raise',        name: 'Standing calf raise',           sets: [{reps:12,weight:20},{reps:10,weight:25},{reps:10,weight:25}] },
       { id: 'spanish-squat',     name: 'Spanish squat (45s +band)', bw: true, sets: [{reps:45,weight:null},{reps:45,weight:null},{reps:45,weight:null}] },
       { id: 'cable-crunch',      name: 'Cable crunch',                  sets: [{reps:12,weight:32},{reps:10,weight:41},{reps:10,weight:41}] },
-    ]
-  },
-  'upper-a': {
-    name: 'Upper A · Hypertrophy', icon: '💪', accent: '#c9a84c',
-    exercises: [
-      { id: 'bench-press',       name: 'Barbell bench press',           sets: [{reps:10,weight:65},{reps:8,weight:75},{reps:6,weight:80},{reps:6,weight:80}] },
-      { id: 'weighted-pullups',  name: 'Weighted pull ups', bw: true,   sets: [{reps:8,weight:0},{reps:6,weight:5},{reps:5,weight:7.5},{reps:5,weight:7.5}] },
-      { id: 'db-shoulder-press', name: 'Dumbbell shoulder press',       sets: [{reps:10,weight:18},{reps:10,weight:20},{reps:8,weight:20}] },
-      { id: 'chest-row',         name: 'Chest-supported row',           sets: [{reps:10,weight:35},{reps:8,weight:42.5},{reps:8,weight:42.5}] },
-      { id: 'pec-fly',           name: 'Pec fly',                       sets: [{reps:12,weight:16},{reps:10,weight:18},{reps:10,weight:18}] },
-      { id: 'face-pulls',        name: 'Face pulls',                    sets: [{reps:15,weight:18},{reps:15,weight:18},{reps:15,weight:18}] },
-      { id: 'farmer-carry',      name: 'Farmer carry (25m)',            sets: [{reps:25,weight:30},{reps:25,weight:30},{reps:25,weight:30}] },
     ]
   },
   'upper-b': {
