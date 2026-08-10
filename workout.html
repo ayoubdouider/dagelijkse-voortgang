@@ -343,89 +343,160 @@ const app  = initializeApp(FIREBASE_CONFIG);
 const auth = getAuth(app);
 const db   = initializeFirestore(app, { localCache: persistentLocalCache() });
 
-// ── Workout data ──────────────────────────────────────────────────────────────
-const WORKOUTS = {
-  'upper-a': {
-    name: 'Upper A', icon: '💪', accent: '#c9a84c',
-    exercises: [
-      { id: 'bench-press',       name: 'Barbell bench press',           sets: [{reps:10,weight:65},{reps:8,weight:75},{reps:6,weight:80},{reps:6,weight:80}] },
-      { id: 'weighted-pullups',  name: 'Weighted pull ups', bw: true,   sets: [{reps:8,weight:0},{reps:6,weight:5},{reps:5,weight:7.5},{reps:5,weight:7.5}] },
-      { id: 'db-shoulder-press', name: 'Dumbbell shoulder press',       sets: [{reps:10,weight:18},{reps:10,weight:20},{reps:8,weight:20}] },
-      { id: 'tbar-row',          name: 'T-Bar row',                     sets: [{reps:10,weight:35},{reps:8,weight:42.5},{reps:8,weight:42.5}] },
-      { id: 'pec-fly',           name: 'Pec fly',                       sets: [{reps:12,weight:16},{reps:10,weight:18},{reps:10,weight:18}] },
-      { id: 'face-pulls',        name: 'Face pulls',                    sets: [{reps:15,weight:18},{reps:15,weight:18},{reps:15,weight:18}] },
-      { id: 'farmer-carry',      name: 'Farmer carry',                  sets: [{reps:25,weight:30},{reps:25,weight:30},{reps:25,weight:30}] },
-    ]
-  },
-  'lower-a': {
-    name: 'Lower A', icon: '🦵', accent: '#3b82f6',
-    exercises: [
-      { id: 'banded-tke',        name: 'Banded TKE', bw: true,          sets: [{reps:20,weight:null},{reps:20,weight:null},{reps:20,weight:null}] },
-      { id: 'spanish-squat',     name: 'Spanish squat', bw: true,       sets: [{reps:45,weight:null},{reps:45,weight:null},{reps:45,weight:null}] },
-      { id: 'back-squat',        name: 'Back squat',                    sets: [{reps:8,weight:30},{reps:8,weight:35},{reps:8,weight:35},{reps:8,weight:35}] },
-      { id: 'romanian-deadlift', name: 'Romanian deadlift',             sets: [{reps:8,weight:35},{reps:8,weight:45},{reps:8,weight:45},{reps:8,weight:45}] },
-      { id: 'step-up',           name: 'Step-up',                       sets: [{reps:8,weight:10},{reps:8,weight:10},{reps:8,weight:10}] },
-      { id: 'lying-leg-curl',    name: 'Lying leg curl',                sets: [{reps:12,weight:27},{reps:10,weight:32},{reps:10,weight:32}] },
-      { id: 'calf-raise',        name: 'Standing calf raise',           sets: [{reps:12,weight:20},{reps:10,weight:25},{reps:10,weight:25}] },
-      { id: 'cable-crunch',      name: 'Cable crunch',                  sets: [{reps:12,weight:32},{reps:10,weight:41},{reps:10,weight:41}] },
-    ]
-  },
-  'upper-b': {
-    name: 'Upper B', icon: '💪', accent: '#8b5cf6',
-    exercises: [
-      { id: 'mb-chest-pass',    name: 'Med ball chest pass',            sets: [{reps:5,weight:5},{reps:5,weight:5},{reps:5,weight:5},{reps:5,weight:5}] },
-      { id: 'mb-rot-throw',     name: 'Med ball rotational throw',      sets: [{reps:5,weight:5},{reps:5,weight:5},{reps:5,weight:5}] },
-      { id: 'incline-bench',    name: 'Incline barbell bench press',    sets: [{reps:10,weight:60},{reps:8,weight:67.5},{reps:6,weight:72.5},{reps:6,weight:72.5}] },
-      { id: 'pulldown',         name: 'Lat pulldown',                   sets: [{reps:10,weight:59},{reps:8,weight:66},{reps:6,weight:73},{reps:6,weight:73}] },
-      { id: 'ohp',              name: 'Overhead press',                 sets: [{reps:8,weight:42.5},{reps:6,weight:47.5},{reps:6,weight:47.5}] },
-      { id: 'chest-row',        name: 'Chest-supported row',            sets: [{reps:10,weight:35},{reps:8,weight:42.5},{reps:8,weight:45}] },
-      { id: 'reverse-pec-deck', name: 'Reverse pec deck',               sets: [{reps:12,weight:4.5},{reps:12,weight:4.5},{reps:12,weight:4.5}] },
-      { id: 'pallof-press',     name: 'Pallof press',                   sets: [{reps:12,weight:23},{reps:12,weight:27},{reps:12,weight:27}] },
-    ]
-  },
-  'lower-b': {
-    name: 'Lower B', icon: '🦵', accent: '#ef4444',
-    exercises: [
-      { id: 'pogos',            name: 'Pogos', bw: true,                sets: [{reps:20,weight:null},{reps:20,weight:null},{reps:20,weight:null}] },
-      { id: 'box-landing',      name: 'Box landing', bw: true,          sets: [{reps:5,weight:null},{reps:5,weight:null},{reps:5,weight:null}] },
-      { id: 'cmj',              name: 'Countermovement jump', bw: true, sets: [{reps:5,weight:null},{reps:5,weight:null},{reps:5,weight:null}] },
-      { id: 'lateral-hop',      name: 'Lateral hop & stick', bw: true,  sets: [{reps:5,weight:null},{reps:5,weight:null},{reps:5,weight:null}] },
-      { id: 'y-balance',        name: 'Single-leg balance reach', bw: true, sets: [{reps:5,weight:null},{reps:5,weight:null}] },
-      { id: 'deadlift',         name: 'Deadlift',                       sets: [{reps:5,weight:50},{reps:5,weight:60},{reps:5,weight:60},{reps:5,weight:60}] },
-      { id: 'hack-squat',       name: 'Hack squat',                     sets: [{reps:10,weight:null},{reps:8,weight:null},{reps:8,weight:null}] },
-      { id: 'hip-thrust',       name: 'Hip thrust',                     sets: [{reps:10,weight:25},{reps:8,weight:35},{reps:8,weight:35}] },
-      { id: 'sl-rdl',           name: 'Single-leg Romanian deadlift',   sets: [{reps:10,weight:12},{reps:10,weight:12},{reps:10,weight:12}] },
-      { id: 'seated-leg-curl',  name: 'Seated leg curl',                sets: [{reps:12,weight:27},{reps:10,weight:32},{reps:10,weight:32}] },
-      { id: 'copenhagen-plank', name: 'Copenhagen plank', bw: true,     sets: [{reps:20,weight:null},{reps:20,weight:null},{reps:20,weight:null}] },
-      { id: 'cable-rotation',   name: 'Cable rotation',                 sets: [{reps:12,weight:27},{reps:10,weight:36},{reps:10,weight:36}] },
-    ]
-  },
-  'full-body': {
-    name: 'Full body', icon: '🏋️', accent: '#f59e0b',
-    exercises: [
-      { id: 'squat',            name: 'Squat',                          sets: [{reps:5,weight:35},{reps:5,weight:40},{reps:5,weight:40}] },
-      { id: 'bench-press',      name: 'Bench press',                    sets: [{reps:5,weight:70},{reps:5,weight:75},{reps:5,weight:80}] },
-      { id: 'deadlift',         name: 'Deadlift',                       sets: [{reps:5,weight:60},{reps:5,weight:70},{reps:5,weight:70}] },
-      { id: 'pullups',          name: 'Pull ups', bw: true,             sets: [{reps:8,weight:0},{reps:6,weight:0},{reps:5,weight:5}] },
-      { id: 'ohp',              name: 'Overhead press',                 sets: [{reps:8,weight:40},{reps:6,weight:45},{reps:6,weight:45}] },
-      { id: 'barbell-row',      name: 'Barbell row',                    sets: [{reps:8,weight:40},{reps:8,weight:45},{reps:8,weight:45}] },
-      { id: 'landmine-twist',   name: 'Landmine twist',                 sets: [{reps:12,weight:10},{reps:12,weight:10},{reps:12,weight:10}] },
-    ]
-  }
+// ── Oefeningen-catalogus (canoniek: één record per beweging) ───────────────────
+// track:'weight' → double progression (reps tot repMax, dan +inc kg, reps terug naar repMin)
+// track:'reps'   → vast protocol (rehab/plyo/power/holds), geen gewichtsformule
+const EXERCISES = {
+  // Bovenlichaam push/pull
+  'bench-press':       { name: 'Barbell bench press',          track:'weight', repMin:6,  repMax:10, inc:2.5, sets:[{reps:10,weight:65},{reps:8,weight:75},{reps:6,weight:80},{reps:6,weight:80}] },
+  'incline-bench':     { name: 'Incline barbell bench press',  track:'weight', repMin:6,  repMax:10, inc:2.5, sets:[{reps:10,weight:60},{reps:8,weight:67.5},{reps:6,weight:72.5},{reps:6,weight:72.5}] },
+  'ohp':               { name: 'Overhead press',               track:'weight', repMin:6,  repMax:8,  inc:2.5, sets:[{reps:8,weight:42.5},{reps:6,weight:47.5},{reps:6,weight:47.5}] },
+  'db-shoulder-press': { name: 'Dumbbell shoulder press',      track:'weight', repMin:8,  repMax:12, inc:2.5, sets:[{reps:10,weight:18},{reps:10,weight:20},{reps:8,weight:20}] },
+  'pull-up':           { name: 'Pull ups',           bw:true,  track:'weight', repMin:5,  repMax:8,  inc:2.5, sets:[{reps:8,weight:0},{reps:6,weight:5},{reps:5,weight:7.5},{reps:5,weight:7.5}] },
+  'lat-pulldown':      { name: 'Lat pulldown',                 track:'weight', repMin:6,  repMax:10, inc:2.5, sets:[{reps:10,weight:59},{reps:8,weight:66},{reps:6,weight:73},{reps:6,weight:73}] },
+  'tbar-row':          { name: 'T-Bar row',                    track:'weight', repMin:8,  repMax:10, inc:2.5, sets:[{reps:10,weight:35},{reps:8,weight:42.5},{reps:8,weight:42.5}] },
+  'chest-row':         { name: 'Chest-supported row',          track:'weight', repMin:8,  repMax:10, inc:2.5, sets:[{reps:10,weight:35},{reps:8,weight:42.5},{reps:8,weight:45}] },
+  'barbell-row':       { name: 'Barbell row',                  track:'weight', repMin:8,  repMax:10, inc:2.5, sets:[{reps:8,weight:40},{reps:8,weight:45},{reps:8,weight:45}] },
+  'pec-fly':           { name: 'Pec fly',                      track:'weight', repMin:10, repMax:12, inc:2.5, sets:[{reps:12,weight:16},{reps:10,weight:18},{reps:10,weight:18}] },
+  'reverse-pec-deck':  { name: 'Reverse pec deck',             track:'weight', repMin:12, repMax:15, inc:2.5, sets:[{reps:12,weight:4.5},{reps:12,weight:4.5},{reps:12,weight:4.5}] },
+  'face-pulls':        { name: 'Face pulls',                   track:'weight', repMin:12, repMax:15, inc:2.5, sets:[{reps:15,weight:18},{reps:15,weight:18},{reps:15,weight:18}] },
+  'farmer-carry':      { name: 'Farmer carry',                 track:'weight', repMin:20, repMax:30, inc:5,   sets:[{reps:25,weight:30},{reps:25,weight:30},{reps:25,weight:30}] },
+  // Onderlichaam
+  'squat':             { name: 'Back squat',                  track:'weight', repMin:5,  repMax:8,  inc:5,   sets:[{reps:8,weight:30},{reps:8,weight:35},{reps:8,weight:35},{reps:8,weight:35}] },
+  'deadlift':          { name: 'Deadlift',                    track:'weight', repMin:5,  repMax:8,  inc:5,   sets:[{reps:5,weight:50},{reps:5,weight:60},{reps:5,weight:60},{reps:5,weight:60}] },
+  'romanian-deadlift': { name: 'Romanian deadlift',           track:'weight', repMin:8,  repMax:10, inc:2.5, sets:[{reps:8,weight:35},{reps:8,weight:45},{reps:8,weight:45},{reps:8,weight:45}] },
+  'hack-squat':        { name: 'Hack squat',                  track:'weight', repMin:8,  repMax:10, inc:5,   sets:[{reps:10,weight:null},{reps:8,weight:null},{reps:8,weight:null}] },
+  'hip-thrust':        { name: 'Hip thrust',                  track:'weight', repMin:8,  repMax:10, inc:5,   sets:[{reps:10,weight:25},{reps:8,weight:35},{reps:8,weight:35}] },
+  'step-up':           { name: 'Step-up',                     track:'weight', repMin:8,  repMax:10, inc:2.5, sets:[{reps:8,weight:10},{reps:8,weight:10},{reps:8,weight:10}] },
+  'sl-rdl':            { name: 'Single-leg Romanian deadlift',track:'weight', repMin:10, repMax:12, inc:2.5, sets:[{reps:10,weight:12},{reps:10,weight:12},{reps:10,weight:12}] },
+  'lying-leg-curl':    { name: 'Lying leg curl',              track:'weight', repMin:10, repMax:12, inc:2.5, sets:[{reps:12,weight:27},{reps:10,weight:32},{reps:10,weight:32}] },
+  'seated-leg-curl':   { name: 'Seated leg curl',             track:'weight', repMin:10, repMax:12, inc:2.5, sets:[{reps:12,weight:27},{reps:10,weight:32},{reps:10,weight:32}] },
+  'calf-raise':        { name: 'Standing calf raise',         track:'weight', repMin:10, repMax:12, inc:2.5, sets:[{reps:12,weight:20},{reps:10,weight:25},{reps:10,weight:25}] },
+  // Core (belast)
+  'cable-crunch':      { name: 'Cable crunch',                track:'weight', repMin:10, repMax:12, inc:2.5, sets:[{reps:12,weight:32},{reps:10,weight:41},{reps:10,weight:41}] },
+  'cable-rotation':    { name: 'Cable rotation',              track:'weight', repMin:10, repMax:12, inc:2.5, sets:[{reps:12,weight:27},{reps:10,weight:36},{reps:10,weight:36}] },
+  'landmine-twist':    { name: 'Landmine twist',              track:'weight', repMin:10, repMax:12, inc:2.5, sets:[{reps:12,weight:10},{reps:12,weight:10},{reps:12,weight:10}] },
+  'pallof-press':      { name: 'Pallof press',                track:'weight', repMin:12, repMax:12, inc:2.5, sets:[{reps:12,weight:23},{reps:12,weight:27},{reps:12,weight:27}] },
+  // Rehab / plyo / power / holds — vast protocol (reps-only)
+  'banded-tke':        { name: 'Banded TKE',         bw:true,  track:'reps', sets:[{reps:20,weight:null},{reps:20,weight:null},{reps:20,weight:null}] },
+  'spanish-squat':     { name: 'Spanish squat',      bw:true,  track:'reps', sets:[{reps:45,weight:null},{reps:45,weight:null},{reps:45,weight:null}] },
+  'pogos':             { name: 'Pogos',              bw:true,  track:'reps', sets:[{reps:20,weight:null},{reps:20,weight:null},{reps:20,weight:null}] },
+  'box-landing':       { name: 'Box landing',        bw:true,  track:'reps', sets:[{reps:5,weight:null},{reps:5,weight:null},{reps:5,weight:null}] },
+  'cmj':               { name: 'Countermovement jump',bw:true, track:'reps', sets:[{reps:5,weight:null},{reps:5,weight:null},{reps:5,weight:null}] },
+  'lateral-hop':       { name: 'Lateral hop & stick',bw:true,  track:'reps', sets:[{reps:5,weight:null},{reps:5,weight:null},{reps:5,weight:null}] },
+  'y-balance':         { name: 'Single-leg balance reach', bw:true, track:'reps', sets:[{reps:5,weight:null},{reps:5,weight:null}] },
+  'copenhagen-plank':  { name: 'Copenhagen plank',   bw:true,  track:'reps', sets:[{reps:20,weight:null},{reps:20,weight:null},{reps:20,weight:null}] },
+  'mb-chest-pass':     { name: 'Med ball chest pass',          track:'reps', sets:[{reps:5,weight:5},{reps:5,weight:5},{reps:5,weight:5},{reps:5,weight:5}] },
+  'mb-rot-throw':      { name: 'Med ball rotational throw',     track:'reps', sets:[{reps:5,weight:5},{reps:5,weight:5},{reps:5,weight:5}] },
 };
 
-function e(n) { return Array.from({length: n}, () => ({reps: null, weight: null})); }
+// ── Workouts: verwijzen naar canonieke oefeningen (slots) ──────────────────────
+// Gewicht is gedeeld via EXERCISES/opslag; aantal sets + rep-doel zijn per workout.
+const WORKOUTS = {
+  'upper-a': { name: 'Upper A', icon: '💪', accent: '#c9a84c', slots: [
+    { ex:'bench-press', sets:4 }, { ex:'pull-up', sets:4 }, { ex:'db-shoulder-press', sets:3 },
+    { ex:'tbar-row', sets:3 }, { ex:'pec-fly', sets:3 }, { ex:'face-pulls', sets:3 }, { ex:'farmer-carry', sets:3 },
+  ]},
+  'lower-a': { name: 'Lower A', icon: '🦵', accent: '#3b82f6', slots: [
+    { ex:'banded-tke', sets:3 }, { ex:'spanish-squat', sets:3 }, { ex:'squat', sets:4, repMin:6, repMax:8 },
+    { ex:'romanian-deadlift', sets:4 }, { ex:'step-up', sets:3 }, { ex:'lying-leg-curl', sets:3 },
+    { ex:'calf-raise', sets:3 }, { ex:'cable-crunch', sets:3 },
+  ]},
+  'upper-b': { name: 'Upper B', icon: '💪', accent: '#8b5cf6', slots: [
+    { ex:'mb-chest-pass', sets:4 }, { ex:'mb-rot-throw', sets:3 }, { ex:'incline-bench', sets:4 },
+    { ex:'lat-pulldown', sets:4 }, { ex:'ohp', sets:3 }, { ex:'chest-row', sets:3 },
+    { ex:'reverse-pec-deck', sets:3 }, { ex:'pallof-press', sets:3 },
+  ]},
+  'lower-b': { name: 'Lower B', icon: '🦵', accent: '#ef4444', slots: [
+    { ex:'pogos', sets:3 }, { ex:'box-landing', sets:3 }, { ex:'cmj', sets:3 }, { ex:'lateral-hop', sets:3 },
+    { ex:'y-balance', sets:2 }, { ex:'deadlift', sets:4 }, { ex:'hack-squat', sets:3 }, { ex:'hip-thrust', sets:3 },
+    { ex:'sl-rdl', sets:3 }, { ex:'seated-leg-curl', sets:3 }, { ex:'copenhagen-plank', sets:3 }, { ex:'cable-rotation', sets:3 },
+  ]},
+  'full-body': { name: 'Full body', icon: '🏋️', accent: '#f59e0b', slots: [
+    { ex:'squat', sets:3, repMin:5, repMax:5 }, { ex:'bench-press', sets:3, repMin:5, repMax:5 },
+    { ex:'deadlift', sets:3, repMin:5, repMax:5 }, { ex:'pull-up', sets:3, repMin:5, repMax:8 },
+    { ex:'ohp', sets:3, repMin:6, repMax:6 }, { ex:'barbell-row', sets:3 }, { ex:'landmine-twist', sets:3 },
+  ]},
+};
+
+// ── Catalogus-helpers ──────────────────────────────────────────────────────────
+const round1   = n => Math.round(n * 10) / 10;
+const round2_5 = n => Math.round(n / 2.5) * 2.5;   // afronden op halterschijf-stap
+
+// Zet een workout om naar concrete oefeningen (catalogus + slot-prescriptie).
+function resolveWorkout(wid) {
+  return WORKOUTS[wid].slots.map(slot => {
+    const c = EXERCISES[slot.ex];
+    return {
+      id: slot.ex, name: c.name, bw: !!c.bw, track: c.track, inc: c.inc,
+      repMin: slot.repMin ?? c.repMin, repMax: slot.repMax ?? c.repMax,
+      nSets: slot.sets ?? c.sets.length, defaultSets: c.sets,
+    };
+  });
+}
+
+// Double progression per set: haal je repMax → +inc kg en reps terug naar repMin; anders +1 rep.
+function nextTarget(ex, lastSets) {
+  return lastSets.map(s => {
+    if (ex.track !== 'weight' || s.weight == null) return { reps: s.reps, weight: s.weight };
+    if (s.reps != null && s.reps >= ex.repMax)     return { reps: ex.repMin, weight: round1(s.weight + ex.inc) };
+    const reps = s.reps == null ? ex.repMin : Math.min(ex.repMax, s.reps + 1);
+    return { reps, weight: s.weight };
+  });
+}
+
+// Bouw n sets uit een bronreeks (herhaal laatste indien te kort, kap indien te lang).
+function buildSets(n, src) {
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const s = src[Math.min(i, src.length - 1)] || { reps: null, weight: null };
+    out.push({ reps: s.reps, weight: s.weight });
+  }
+  return out;
+}
+
+// Zwaarste set uit een reeks (voor tabellen): belaste set, of anders max reps.
+function topSet(sets) {
+  if (!Array.isArray(sets) || !sets.length) return null;
+  const weighted = sets.filter(s => typeof s.weight === 'number');
+  if (weighted.length) {
+    const w = Math.max(...weighted.map(s => s.weight));
+    const reps = (weighted.find(s => s.weight === w) || {}).reps;
+    return { kind: 'weight', weight: w, reps };
+  }
+  const reps = sets.filter(s => typeof s.reps === 'number').map(s => s.reps);
+  return reps.length ? { kind: 'reps', reps: Math.max(...reps) } : null;
+}
+
+// Voorgevulde sets voor een oefening in deze workout.
+// Belaste lift geopend in een ANDER rep-schema dan vorige keer → reken het gedeelde
+// gewicht om naar dit rep-doel via de Epley-verhouding (fewer reps ⇒ zwaarder). Zo toont
+// één gedeelde kracht overal automatisch het juiste gewicht — geen handmatig bijstellen.
+// Zelfde schema / bodyweight / reps-only → gewone double progression.
+function computeTarget(ex, saved) {
+  const sets    = saved && Array.isArray(saved.sets) && saved.sets.length ? saved.sets : ex.defaultSets;
+  const lastRep = saved && saved.repTarget;
+  if (ex.track === 'weight' && !ex.bw && lastRep && lastRep !== ex.repMax) {
+    const top = topSet(sets);
+    if (top && top.kind === 'weight' && top.weight) {
+      const factor = (1 + lastRep / 30) / (1 + ex.repMax / 30);   // Epley e1RM-behoud
+      return [{ reps: ex.repMax, weight: round2_5(top.weight * factor) }];
+    }
+  }
+  return nextTarget(ex, sets);
+}
 
 // ── Session state ─────────────────────────────────────────────────────────────
-let uid         = null;
-let currentWid  = null;
-let currentIdx  = 0;
-let sessionSets = {};
-let startTime   = null;
+let uid              = null;
+let currentWid       = null;
+let currentIdx       = 0;
+let sessionSets      = {};
+let currentExercises = [];
+let startTime        = null;
 
 // ── Refs ──────────────────────────────────────────────────────────────────────
-const setsRef    = wid => doc(db, 'users', uid, 'workout_sets', wid);
-const historyRef = ()  => doc(db, 'users', uid, 'meta', 'workout_history');
+const exerciseStateRef = () => doc(db, 'users', uid, 'meta', 'exercise_state');
+const historyRef       = () => doc(db, 'users', uid, 'meta', 'workout_history');
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 onAuthStateChanged(auth, async user => {
@@ -450,13 +521,14 @@ document.getElementById('signoutBtn').addEventListener('click', async () => {
 });
 
 // ── Firestore helpers ─────────────────────────────────────────────────────────
-async function loadWorkoutSets(wid) {
-  const snap = await getDoc(setsRef(wid));
-  return snap.exists() ? snap.data() : null;
+// Gedeelde oefening-staat: { <canonieke-id>: { sets:[{reps,weight}], updatedAt } }
+async function loadExerciseState() {
+  const snap = await getDoc(exerciseStateRef());
+  return snap.exists() ? snap.data() : {};
 }
 
-async function saveWorkoutSets(wid, sets) {
-  await setDoc(setsRef(wid), sets);
+async function saveExerciseState(state) {
+  await setDoc(exerciseStateRef(), state);
 }
 
 async function loadHistory() {
@@ -487,7 +559,7 @@ async function renderSelection() {
       <div>
         <div class="wcard-icon">${w.icon}</div>
         <div class="wcard-name">${w.name}</div>
-        <div class="wcard-count">${w.exercises.length} oefeningen</div>
+        <div class="wcard-count">${w.slots.length} oefeningen</div>
       </div>
       <div class="wcard-last">${lastText}</div>
     `;
@@ -530,6 +602,7 @@ document.getElementById('dashToggle').addEventListener('click', async () => {
 
 async function renderDashboard() {
   const hist    = await loadHistory();
+  const state   = await loadExerciseState();
   const body    = document.getElementById('dashBody');
   const SECTION = (t) => `<p style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;margin-top:4px">${t}</p>`;
 
@@ -580,6 +653,37 @@ async function renderDashboard() {
   const thisMonth      = hist.filter(h => new Date(h.date) >= thisMonthStart).length;
   const avgDuration    = hist.length ? Math.round(hist.reduce((s,h) => s+(h.duration||0), 0) / hist.length) : 0;
 
+  // ── Per oefening: laatst gedaan + volgende target (gedeeld, geen duplicaten) ─
+  const fmtTop = (t, bw) => {
+    if (!t) return '—';
+    if (t.kind === 'reps') return `${t.reps} reps`;
+    if (bw && t.weight === 0) return `${t.reps ?? '—'} reps (bw)`;
+    const w = bw ? `+${t.weight} kg` : `${t.weight} kg`;
+    return t.reps != null ? `${w} × ${t.reps}` : w;
+  };
+  const exRow = (id) => {
+    const c     = EXERCISES[id];
+    const saved = state[id] && Array.isArray(state[id].sets) && state[id].sets.length ? state[id].sets : null;
+    const last  = saved ? topSet(saved) : null;
+    const next  = saved && c.track === 'weight'
+      ? topSet(nextTarget({ track:c.track, inc:c.inc, repMin:c.repMin, repMax:c.repMax }, saved))
+      : null;
+    return `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface);border-radius:12px;border:1px solid rgba(255,255,255,0.05)">
+        <div style="min-width:0">
+          <div style="font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.name}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">Laatst: ${fmtTop(last, c.bw)}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;padding-left:12px">
+          <div style="font-size:14px;font-weight:700;color:var(--gold-light)">${next ? fmtTop(next, c.bw) : '—'}</div>
+          <div style="font-size:10px;color:var(--muted)">volgende</div>
+        </div>
+      </div>`;
+  };
+  const ids       = Object.keys(EXERCISES);
+  const liftRows  = ids.filter(id => EXERCISES[id].track === 'weight').map(exRow).join('');
+  const protoRows = ids.filter(id => EXERCISES[id].track === 'reps').map(exRow).join('');
+
   body.innerHTML = `
     ${SECTION('Frequentie (8 weken)')}
     <div style="display:flex;gap:6px;align-items:flex-end;margin-bottom:24px">${freqBars}</div>
@@ -600,7 +704,13 @@ async function renderDashboard() {
     </div>
 
     ${SECTION('Per training')}
-    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">${typeRows}</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px">${typeRows}</div>
+
+    ${SECTION('Oefeningen — laatst gedaan → volgende target')}
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px">${liftRows}</div>
+
+    ${SECTION('Rehab / plyo / vast protocol')}
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">${protoRows}</div>
   `;
 }
 
@@ -610,15 +720,16 @@ async function startWorkout(wid) {
   currentIdx = 0;
   startTime  = Date.now();
 
-  const saved = await loadWorkoutSets(wid);
-  const workout = WORKOUTS[wid];
+  const state = await loadExerciseState();
+  currentExercises = resolveWorkout(wid);
   sessionSets = {};
-  workout.exercises.forEach(ex => {
-    const src = saved && saved[ex.id] ? saved[ex.id] : ex.sets;
-    sessionSets[ex.id] = src.map(s => ({ reps: s.reps, weight: s.weight, done: false }));
+  currentExercises.forEach(ex => {
+    // Gedeelde staat → target voor DEZE workout (omgerekend naar rep-doel + progressie).
+    const target = computeTarget(ex, state[ex.id] || null);
+    sessionSets[ex.id] = buildSets(ex.nSets, target).map(s => ({ reps: s.reps, weight: s.weight, done: false }));
   });
 
-  document.getElementById('activeTitle').textContent = workout.name;
+  document.getElementById('activeTitle').textContent = WORKOUTS[wid].name;
   showScreen('screen-active');
   renderExercise();
 }
@@ -634,10 +745,9 @@ document.getElementById('doneHomeBtn').addEventListener('click', async () => {
 });
 
 function renderExercise() {
-  const workout = WORKOUTS[currentWid];
-  const ex      = workout.exercises[currentIdx];
-  const total   = workout.exercises.length;
-  const sets    = sessionSets[ex.id];
+  const ex     = currentExercises[currentIdx];
+  const total  = currentExercises.length;
+  const sets   = sessionSets[ex.id];
 
   document.getElementById('progressLabel').textContent = ex.name.length > 28 ? ex.name.slice(0,28)+'…' : ex.name;
   document.getElementById('progressCount').textContent = `${currentIdx + 1} / ${total}`;
@@ -682,8 +792,13 @@ function renderExercise() {
   const isLast  = currentIdx === total - 1;
   const isFirst = currentIdx === 0;
 
+  const repHint = ex.track === 'weight'
+    ? `doel ${ex.repMin === ex.repMax ? ex.repMin : ex.repMin + '–' + ex.repMax} reps`
+    : 'vast protocol';
+
   wrap.innerHTML = `
     <div class="exercise-name">${ex.name}</div>
+    <div style="font-size:12px;color:var(--muted);margin:-2px 0 14px">${ex.nSets} sets · ${repHint}</div>
     <div class="exercise-dots">${dots}</div>
     <div class="sets-list">${setsHtml}</div>
     <div class="nav-btns">
@@ -705,20 +820,20 @@ document.getElementById('exerciseWrap').addEventListener('click', e => {
   if (action === 'adj')    adjVal(field, idx, parseFloat(delta));
   if (action === 'toggle') toggleSetDone(idx);
   if (action === 'prev')   { if (currentIdx > 0) { currentIdx--; renderExercise(); } }
-  if (action === 'next')   { if (currentIdx < WORKOUTS[currentWid].exercises.length - 1) { currentIdx++; renderExercise(); } }
+  if (action === 'next')   { if (currentIdx < currentExercises.length - 1) { currentIdx++; renderExercise(); } }
   if (action === 'finish') finishWorkout();
 });
 
 document.getElementById('exerciseWrap').addEventListener('input', e => {
   const input = e.target.closest('input[data-field]');
   if (!input || !currentWid) return;
-  const ex  = WORKOUTS[currentWid].exercises[currentIdx];
+  const ex  = currentExercises[currentIdx];
   const val = input.value === '' ? null : parseFloat(input.value);
   sessionSets[ex.id][parseInt(input.dataset.si)][input.dataset.field] = isNaN(val) ? null : val;
 });
 
 function adjVal(field, si, delta) {
-  const ex  = WORKOUTS[currentWid].exercises[currentIdx];
+  const ex  = currentExercises[currentIdx];
   const set = sessionSets[ex.id][si];
   const val = Math.max(0, parseFloat(((set[field] ?? 0) + delta).toFixed(1)));
   set[field] = val;
@@ -727,7 +842,7 @@ function adjVal(field, si, delta) {
 }
 
 function toggleSetDone(si) {
-  const ex  = WORKOUTS[currentWid].exercises[currentIdx];
+  const ex  = currentExercises[currentIdx];
   const set = sessionSets[ex.id][si];
   set.done  = !set.done;
   const row = document.getElementById('set-row-' + si);
@@ -735,23 +850,29 @@ function toggleSetDone(si) {
 }
 
 async function finishWorkout() {
-  // Save sets (strip done flag)
-  const toSave = {};
-  WORKOUTS[currentWid].exercises.forEach(ex => {
-    toSave[ex.id] = sessionSets[ex.id].map(s => ({ reps: s.reps, weight: s.weight }));
+  // Schrijf per oefening terug naar de gedeelde staat (draagt over naar alle workouts).
+  const state = await loadExerciseState();
+  const now   = new Date().toISOString();
+  currentExercises.forEach(ex => {
+    state[ex.id] = {
+      sets: sessionSets[ex.id].map(s => ({ reps: s.reps, weight: s.weight })),
+      repTarget: (ex.track === 'weight' && !ex.bw) ? ex.repMax : null,   // schema voor omrekening
+      updatedAt: now,
+    };
   });
-  await saveWorkoutSets(currentWid, toSave);
+  await saveExerciseState(state);
 
   const durationMin = Math.round((Date.now() - startTime) / 60000);
-  await appendHistory({ wid: currentWid, date: new Date().toISOString(), duration: durationMin });
+  await appendHistory({ wid: currentWid, date: now, duration: durationMin });
 
   const w = WORKOUTS[currentWid];
-  document.getElementById('doneSub').textContent = `${w.name} · ${w.exercises.length} oefeningen · ${durationMin} min`;
+  const nEx = currentExercises.length;
+  document.getElementById('doneSub').textContent = `${w.name} · ${nEx} oefeningen · ${durationMin} min`;
   document.getElementById('doneSummary').innerHTML = `
     <div class="done-summary-row"><span class="done-summary-label">Training</span><span class="done-summary-val">${w.icon} ${w.name}</span></div>
-    <div class="done-summary-row"><span class="done-summary-label">Oefeningen</span><span class="done-summary-val">${w.exercises.length}</span></div>
+    <div class="done-summary-row"><span class="done-summary-label">Oefeningen</span><span class="done-summary-val">${nEx}</span></div>
     <div class="done-summary-row"><span class="done-summary-label">Duur</span><span class="done-summary-val">${durationMin} min</span></div>
-    <div class="done-summary-row"><span class="done-summary-label">Datum</span><span class="done-summary-val">${absDate(new Date().toISOString())}</span></div>
+    <div class="done-summary-row"><span class="done-summary-label">Datum</span><span class="done-summary-val">${absDate(now)}</span></div>
   `;
   showScreen('screen-done');
   launchConfetti();
