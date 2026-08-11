@@ -486,6 +486,59 @@ function computeTarget(ex, saved) {
   return nextTarget(ex, sets);
 }
 
+// ── Feedback (na afronden): sterker geworden vs niets nieuws ────────────────────
+const epley  = (w, r) => (w > 0 && r > 0) ? w * (1 + r / 30) : 0;   // geschat 1RM
+const e1rmOf = sets => Math.max(0, ...(sets || []).map(s => epley(s.weight, s.reps)));
+const maxReps = sets => Math.max(0, ...(sets || []).map(s => (typeof s.reps === 'number' ? s.reps : 0)));
+
+// 'stronger' | 'weaker' | 'same' | 'new' — e1RM voor belaste lifts (schema-onafhankelijk),
+// anders reps (bodyweight/rehab). Zo telt een pure schema-omrekening als 'same'.
+function progressStatus(oldSets, newSets) {
+  if (!oldSets || !oldSets.length) return 'new';
+  const oe = e1rmOf(oldSets), ne = e1rmOf(newSets);
+  if (oe > 0 || ne > 0) {
+    if (ne - oe >= 0.5) return 'stronger';
+    if (oe - ne >= 0.5) return 'weaker';
+    return 'same';
+  }
+  const om = maxReps(oldSets), nm = maxReps(newSets);
+  if (nm > om) return 'stronger';
+  if (nm < om) return 'weaker';
+  return 'same';
+}
+
+const fmtW = w => (Math.round(w * 10) / 10).toString().replace('.', ',');
+function fmtTopShort(sets, bw) {
+  const t = topSet(sets);
+  if (!t) return '—';
+  if (t.kind === 'reps') return `${t.reps} reps`;
+  if (bw && (t.weight === 0 || t.weight == null)) return `${t.reps} reps`;
+  const w = bw ? `+${fmtW(t.weight)}` : fmtW(t.weight);
+  return t.reps != null ? `${w}×${t.reps}` : `${w}kg`;
+}
+
+// Bouw de Telegram-tekst: totale feedback — sterker / minder / gelijk.
+function buildFeedbackText(wid, durationMin, items) {
+  const w = WORKOUTS[wid];
+  const strong = items.filter(i => i.status === 'stronger');
+  const weak   = items.filter(i => i.status === 'weaker');
+  // "Gelijk": belaste lifts die op niveau bleven (rehab/plyo op protocol laten we weg).
+  const same   = items.filter(i => (i.status === 'same' || i.status === 'new') && i.ex.track === 'weight' && !i.ex.bw);
+
+  const beforeAfter = i => `• ${i.ex.name}: ${fmtTopShort(i.oldSets, i.ex.bw)} → ${fmtTopShort(i.newSets, i.ex.bw)}`;
+  const huidig      = i => `• ${i.ex.name}: ${fmtTopShort(i.newSets, i.ex.bw)}`;
+
+  let msg = `${w.icon} ${w.name} afgerond · ${durationMin} min\n`;
+
+  if (strong.length) msg += `\n📈 Sterker geworden:\n` + strong.map(beforeAfter).join('\n') + '\n';
+  else               msg += `\n📈 Geen nieuwe PR's deze sessie.\n`;
+
+  if (weak.length)   msg += `\n📉 Minder gedaan:\n` + weak.map(beforeAfter).join('\n') + '\n';
+  if (same.length)   msg += `\n➖ Gelijk gebleven:\n` + same.map(huidig).join('\n') + '\n';
+
+  return msg.trimEnd();
+}
+
 // ── Session state ─────────────────────────────────────────────────────────────
 let uid              = null;
 let currentWid       = null;
@@ -850,20 +903,33 @@ function toggleSetDone(si) {
 }
 
 async function finishWorkout() {
-  // Schrijf per oefening terug naar de gedeelde staat (draagt over naar alle workouts).
   const state = await loadExerciseState();
   const now   = new Date().toISOString();
+  const durationMin = Math.round((Date.now() - startTime) / 60000);
+
+  // Vergelijk oud vs nieuw (vóór overschrijven) en schrijf per oefening terug.
+  const feedback = [];
   currentExercises.forEach(ex => {
+    const oldSets = state[ex.id] && Array.isArray(state[ex.id].sets) ? state[ex.id].sets : null;
+    const newSets = sessionSets[ex.id].map(s => ({ reps: s.reps, weight: s.weight }));
+    feedback.push({ ex, oldSets, newSets, status: progressStatus(oldSets, newSets) });
     state[ex.id] = {
-      sets: sessionSets[ex.id].map(s => ({ reps: s.reps, weight: s.weight })),
+      sets: newSets,
       repTarget: (ex.track === 'weight' && !ex.bw) ? ex.repMax : null,   // schema voor omrekening
       updatedAt: now,
     };
   });
   await saveExerciseState(state);
-
-  const durationMin = Math.round((Date.now() - startTime) / 60000);
   await appendHistory({ wid: currentWid, date: now, duration: durationMin });
+
+  // Feedback-bericht in de wachtrij → Cloud Function stuurt het direct naar Telegram.
+  try {
+    const fid = now.replace(/[:.]/g, '-');
+    await setDoc(doc(db, 'users', uid, 'workout_feedback', fid), {
+      text: buildFeedbackText(currentWid, durationMin, feedback),
+      wid: currentWid, createdAt: now, notified: false,
+    });
+  } catch (err) { console.error('Feedback-bericht in wachtrij zetten mislukt:', err); }
 
   const w = WORKOUTS[currentWid];
   const nEx = currentExercises.length;
